@@ -1,0 +1,317 @@
+@extends('admin.layouts.app')
+@section('title', 'Add New Order')
+@section('page-title', 'Add New Order')
+
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+<style>
+    .item-row { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
+    .remove-item { cursor: pointer; color: #dc3545; }
+    .remove-item:hover { color: #bb2d3b; }
+</style>
+@endpush
+
+@section('content')
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="fas fa-plus me-2"></i> Add New Order
+                    </h5>
+                    <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Orders
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0 ps-3">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form action="{{ route('admin.orders.store') }}" method="POST" id="orderForm">
+                        @csrf
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Customer Information</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">Customer Name</label>
+                                <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror">
+                                @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                <input type="text" name="phone_number" value="{{ old('phone_number') }}" class="form-control @error('phone_number') is-invalid @enderror" required>
+                                @error('phone_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror">
+                                @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Address</label>
+                                <input type="text" name="address" value="{{ old('address') }}" class="form-control @error('address') is-invalid @enderror">
+                                @error('address') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">City</label>
+                                <input type="text" name="city" value="{{ old('city') }}" class="form-control @error('city') is-invalid @enderror">
+                                @error('city') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Order Items</h6>
+                        <div id="itemsContainer">
+                            <div class="item-row row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Product <span class="text-danger">*</span></label>
+                                    <select name="items[0][product_id]" class="form-select product-select @error('items.0.product_id') is-invalid @enderror" required>
+                                        <option value="">Select Product</option>
+                                        @foreach ($products as $product)
+                                            <option value="{{ $product->id }}" {{ old('items.0.product_id') == $product->id ? 'selected' : '' }}>
+                                                {{ $product->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                                    <input type="number" min="1" name="items[0][quantity]" value="{{ old('items.0.quantity', 1) }}" class="form-control quantity-input @error('items.0.quantity') is-invalid @enderror" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Price <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" min="0" name="items[0][price]" value="{{ old('items.0.price', 0.00) }}" class="form-control price-input @error('items.0.price') is-invalid @enderror" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Subtotal <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" min="0" name="items[0][subtotal]" value="0.00" class="form-control subtotal-input" required readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Size</label>
+                                    <input type="text" name="items[0][size]" value="{{ old('items.0.size') }}" class="form-control">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Color</label>
+                                    <input type="text" name="items[0][color]" value="{{ old('items.0.color') }}" class="form-control">
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger btn-sm remove-item">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="button" id="addItemBtn" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i> Add Item
+                            </button>
+                        </div>
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Order Summary</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label class="form-label">Delivery Charge</label>
+                                <input type="number" step="0.01" min="0" name="delivery_charge" value="{{ old('delivery_charge', 0) }}" class="form-control @error('delivery_charge') is-invalid @enderror">
+                                @error('delivery_charge') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Discount</label>
+                                <input type="number" step="0.01" min="0" name="discount" value="{{ old('discount', 0) }}" class="form-control @error('discount') is-invalid @enderror">
+                                @error('discount') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                                <select name="payment_method" class="form-select @error('payment_method') is-invalid @enderror" required>
+                                    <option value="">Select Method</option>
+                                    <option value="cod" {{ old('payment_method') == 'cod' ? 'selected' : '' }}>Cash on Delivery</option>
+                                    <option value="bkash" {{ old('payment_method') == 'bkash' ? 'selected' : '' }}>bKash</option>
+                                    <option value="nagad" {{ old('payment_method') == 'nagad' ? 'selected' : '' }}>Nagad</option>
+                                    <option value="bank_transfer" {{ old('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                                    <option value="card" {{ old('payment_method') == 'card' ? 'selected' : '' }}>Card</option>
+                                </select>
+                                @error('payment_method') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Order Total</label>
+                                <input type="text" id="orderTotal" class="form-control" value="0.00" readonly>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Note</label>
+                                <textarea name="note" rows="2" class="form-control @error('note') is-invalid @enderror">{{ old('note') }}</textarea>
+                                @error('note') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Courier &amp; Status</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label class="form-label">Status <span class="text-danger">*</span></label>
+                                <select name="status" class="form-select @error('status') is-invalid @enderror" required>
+                                    @foreach (['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'] as $status)
+                                        <option value="{{ $status }}" {{ old('status', 'pending') == $status ? 'selected' : '' }}>
+                                            {{ ucfirst($status) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('status') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Courier Name</label>
+                                <input type="text" name="courier_name" value="{{ old('courier_name') }}" class="form-control @error('courier_name') is-invalid @enderror">
+                                @error('courier_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Courier Tracking ID</label>
+                                <input type="text" name="courier_tracking_id" value="{{ old('courier_tracking_id') }}" class="form-control @error('courier_tracking_id') is-invalid @enderror">
+                                @error('courier_tracking_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Consignment ID</label>
+                                <input type="text" name="consignment_id" value="{{ old('consignment_id') }}" class="form-control @error('consignment_id') is-invalid @enderror">
+                                @error('consignment_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Admin Note</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <textarea name="admin_note" rows="3" class="form-control @error('admin_note') is-invalid @enderror" placeholder="Internal note, visible to admins only">{{ old('admin_note') }}</textarea>
+                                @error('admin_note') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Save Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(function () {
+    let itemIndex = 1;
+
+    // Initialize Select2
+    $('.product-select').select2({
+        theme: 'bootstrap-5',
+        width: '100%'
+    });
+
+    // Calculate subtotal for a row
+    function calculateSubtotal(row) {
+        const quantity = parseInt($(row).find('.quantity-input').val()) || 0;
+        const price = parseFloat($(row).find('.price-input').val()) || 0;
+        const subtotal = quantity * price;
+        $(row).find('.subtotal-input').val(subtotal.toFixed(2));
+        calculateTotal();
+    }
+
+    // Calculate overall total
+    function calculateTotal() {
+        let itemsTotal = 0;
+        $('.subtotal-input').each(function() {
+            itemsTotal += parseFloat($(this).val()) || 0;
+        });
+
+        const delivery = parseFloat($('input[name="delivery_charge"]').val()) || 0;
+        const discount = parseFloat($('input[name="discount"]').val()) || 0;
+        const total = itemsTotal + delivery - discount;
+        $('#orderTotal').val(total.toFixed(2));
+    }
+
+    // Attach calculation events
+    $(document).on('input', '.quantity-input, .price-input', function() {
+        calculateSubtotal($(this).closest('.item-row'));
+    });
+
+    $(document).on('input', 'input[name="delivery_charge"], input[name="discount"]', function() {
+        calculateTotal();
+    });
+
+    // Add new item
+    $('#addItemBtn').on('click', function() {
+        const row = `
+            <div class="item-row row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Product <span class="text-danger">*</span></label>
+                    <select name="items[${itemIndex}][product_id]" class="form-select product-select" required>
+                        <option value="">Select Product</option>
+                        @foreach ($products as $product)
+                            <option value="{{ $product->id }}">{{ $product->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <input type="number" min="1" name="items[${itemIndex}][quantity]" value="1" class="form-control quantity-input" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Price <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" min="0" name="items[${itemIndex}][price]" value="0.00" class="form-control price-input" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Subtotal <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" min="0" name="items[${itemIndex}][subtotal]" value="0.00" class="form-control subtotal-input" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Size</label>
+                    <input type="text" name="items[${itemIndex}][size]" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Color</label>
+                    <input type="text" name="items[${itemIndex}][color]" class="form-control">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        $('#itemsContainer').append(row);
+        $('.product-select').last().select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+        itemIndex++;
+    });
+
+    // Remove item
+    $(document).on('click', '.remove-item', function() {
+        if ($('.item-row').length > 1) {
+            $(this).closest('.item-row').remove();
+            calculateTotal();
+        } else {
+            alert('Order must have at least one item.');
+        }
+    });
+
+    // Calculate initial totals
+    $('.item-row').each(function() {
+        calculateSubtotal(this);
+    });
+
+    // Calculate total on page load
+    calculateTotal();
+});
+</script>
+@endpush
